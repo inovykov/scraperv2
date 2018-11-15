@@ -6,9 +6,7 @@
 
         public string DbName { get; set; }
 
-        public string SagasCollectionName { get; set; }
-
-        public string SagasItemsCollectionName { get; set; }
+        public string TasksCollectionName { get; set; }
 
         public string TvShowsCollectionName { get; set; }
     }

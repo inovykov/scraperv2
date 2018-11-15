@@ -1,32 +1,32 @@
 ﻿using System;
+using IntegrationBl.Configurations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Scheduler.Configurations;
 using Shared.Services;
 
-namespace Scheduler.Services
+namespace IntegrationBl.Services
 {
     public class WorkloadService : IWorkloadService
     {
         private readonly IDateTimeService _dateTimeService;
-        private readonly JobsConfig _jobsConfig;
+        private readonly UpdateTasksConfig _updateTasksConfig;
         private readonly ILogger<WorkloadService> _logger;
 
         private readonly object _lockObj = new object();
 
         private DateTime _recentChangeDateTime;
         
-        public TimeSpan IndividualSagaItemTaskExecutionDelay { get; private set; }
+        public TimeSpan UpdateTvShowInfoTaskExecutionDelay { get; private set; }
 
         public WorkloadService(IDateTimeService dateTimeService, 
-            IOptions<JobsConfig> jobsConfig, 
+            IOptions<UpdateTasksConfig> jobsConfig, 
             ILogger<WorkloadService> logger)
         {
             _dateTimeService = dateTimeService;
             _logger = logger;
-            _jobsConfig = jobsConfig?.Value ?? throw new ArgumentNullException(nameof(jobsConfig));
+            _updateTasksConfig = jobsConfig?.Value ?? throw new ArgumentNullException(nameof(jobsConfig));
 
-            IndividualSagaItemTaskExecutionDelay = _jobsConfig.UpdateInfoAboutTvShowAsyncTimeSpan;
+            UpdateTvShowInfoTaskExecutionDelay = _updateTasksConfig.UpdateInfoAboutTvShowAsyncTimeSpan;
 
             _recentChangeDateTime = _dateTimeService.UtcNow;
         }
@@ -37,16 +37,16 @@ namespace Scheduler.Services
             {
                 var timePassedSinceRecentChange = _dateTimeService.UtcNow.Subtract(_recentChangeDateTime);
 
-                if (timePassedSinceRecentChange < _jobsConfig.MinimalIntervalBetweenDelayIncreasing)
+                if (timePassedSinceRecentChange < _updateTasksConfig.MinimalIntervalBetweenDelayIncreasing)
                 {
                     return;
                 }
 
                 _recentChangeDateTime = _dateTimeService.UtcNow;
 
-                IndividualSagaItemTaskExecutionDelay = IndividualSagaItemTaskExecutionDelay.Add(TimeSpan.FromMilliseconds(_jobsConfig.IncreaseDelayStepMilliseconds));
+                UpdateTvShowInfoTaskExecutionDelay = UpdateTvShowInfoTaskExecutionDelay.Add(TimeSpan.FromMilliseconds(_updateTasksConfig.IncreaseDelayStepMilliseconds));
 
-                _logger.LogInformation($"Request rate has changed to {IndividualSagaItemTaskExecutionDelay}. Change time: {_recentChangeDateTime}");
+                _logger.LogInformation($"Request rate has changed to {UpdateTvShowInfoTaskExecutionDelay}. Change time: {_recentChangeDateTime}");
             }
         }
     }

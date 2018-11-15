@@ -7,8 +7,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Scheduler.Clients;
 using Scheduler.Configurations;
-using Scheduler.Services;
-using Shared.Exceptions;
 
 namespace Scheduler.Jobs
 {
@@ -17,15 +15,13 @@ namespace Scheduler.Jobs
         private readonly ILogger<JobStartHostedService> _logger; 
         private readonly IIntegrationClient _integrationClient;
         private readonly JobsConfig _integrationClientConfig;
-        private readonly IWorkloadService _workloadHandler;
         
         public JobStartHostedService(IIntegrationClient integrationClient, 
             IOptions<JobsConfig> integrationClientConfig, 
-            ILogger<JobStartHostedService> logger, 
-            IWorkloadService workloadHandler)
+            ILogger<JobStartHostedService> logger)
         {
             _logger = logger;
-            _workloadHandler = workloadHandler;
+            
             _integrationClient = integrationClient;
             _integrationClientConfig = integrationClientConfig?.Value ?? throw new ArgumentNullException(nameof(integrationClientConfig));
         }
@@ -34,32 +30,9 @@ namespace Scheduler.Jobs
         {
             _logger.LogTrace("Job started");
 
-            await StartUpdateProcessAsync(cancellationToken);
+            await StartUpdateProcessAsync(cancellationToken); // TODO[EN] create recurring job starting immediately
 
             RecurringJob.AddOrUpdate(() => StartUpdateProcessAsync(cancellationToken), Cron.MinuteInterval(_integrationClientConfig.StartUpdateProcessTaskMinutesInterval));
-            
-            // Hangfire doesn't support intervals which are less then a minute
-            while (true)
-            {
-                await Task.Delay(_workloadHandler.IndividualSagaItemTaskExecutionDelay, cancellationToken);
-                
-                // fire and forget intentionally
-                Task.Run(async() => await StartUpdateIndividualSagaItemProcess(cancellationToken));
-            }
-        }
-
-        public async Task StartUpdateIndividualSagaItemProcess(CancellationToken cancellationToken)
-        {
-            _logger.LogTrace("Starting 'Update Info Task'");
-
-            try
-            {
-                await _integrationClient.UpdateInfoAboutTvShowAsync(cancellationToken);
-            }
-            catch (TooManyRequestsException)
-            {
-                _workloadHandler.IncreaseDelayTime();
-            }
         }
         
         public async Task StartUpdateProcessAsync(CancellationToken cancellationToken)

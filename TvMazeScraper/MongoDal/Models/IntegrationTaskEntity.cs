@@ -4,12 +4,12 @@ using Shared.Models.Integration;
 
 namespace MongoDal.Models
 {
-    public class IntegrationSagaEntity
+    public class IntegrationTaskEntity
     {
         [BsonId]
         public Guid Id { get; set; }
 
-        public SagaStates State { get; set; }
+        public IntegrationTaskStates State { get; set; }
 
         public DateTime StartDate { get; set; }
     }

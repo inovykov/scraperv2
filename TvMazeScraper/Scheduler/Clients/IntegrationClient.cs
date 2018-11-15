@@ -34,13 +34,6 @@ namespace Scheduler.Clients
 
             httpResponseMessage.UnwindHttpExceptions();
         }
-
-        public async Task UpdateInfoAboutTvShowAsync(CancellationToken cancellationToken)
-        {
-            var httpResponseMessage = 
-                await _httpClient.PostAsync(_urlFormatService.FormatUrlComponent(_integrationClientConfig.UpdateInfoAboutTvShowAsync), null, cancellationToken);
-
-            httpResponseMessage.UnwindHttpExceptions();
-        }
+     
     }
 }

@@ -20,16 +20,7 @@ namespace IntegrationApi.Controllers
         [HttpPost]
         public async Task<IActionResult> StartUpdateProcessAsync(CancellationToken cancellationToken)
         {
-            var result = await _updateBl.StartUpdateProcessAsync(cancellationToken);
-
-            return Ok(result);
-        }
-
-        [Route("updatesingleitem")]
-        [HttpPost]
-        public async Task<IActionResult> UpdateInfoAboutTvShowAsync(CancellationToken cancellationToken)
-        {
-            await _updateBl.UpdateInfoAboutTvShowAsync(cancellationToken);
+            await _updateBl.StartUpdateProcessAsync(cancellationToken);
 
             return Ok();
         }

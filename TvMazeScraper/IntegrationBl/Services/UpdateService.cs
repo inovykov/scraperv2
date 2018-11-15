@@ -1,6 +1,9 @@
-﻿using System.Linq;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationBl.Factories;
+using Microsoft.Extensions.Logging;
+using Shared.Extensions;
 using Shared.Interfaces;
 using Shared.Models.Integration;
 using Shared.Services;
@@ -11,64 +14,71 @@ namespace IntegrationBl.Services
     {
         private readonly IIntegrationDal _integrationDal;
         private readonly IDateTimeService _dateTimeService;
-        private readonly IIntegrationSagaFactory _integrationSagaFactory;
+        private readonly IIntegrationTaskFactory _integrationTaskFactory;
         private readonly ITvShowUpdateService _tvShowUpdateService;
+        private readonly IWorkloadService _workloadHandler;
+        private readonly IPolicyFactory _policyFactory;
+        private readonly ILogger<UpdateService> _logger;
 
         public UpdateService(IIntegrationDal integrationDal, 
             IDateTimeService dateTimeService, 
-            IIntegrationSagaFactory integrationSagaFactory,
-            ITvShowUpdateService tvShowUpdateService)
+            IIntegrationTaskFactory integrationTaskFactory,
+            ITvShowUpdateService tvShowUpdateService,
+            IWorkloadService workloadHandler, 
+            IPolicyFactory policyFactory, 
+            ILogger<UpdateService> logger)
         {
             _integrationDal = integrationDal;
             _dateTimeService = dateTimeService;
-            _integrationSagaFactory = integrationSagaFactory;
+            _integrationTaskFactory = integrationTaskFactory;
             _tvShowUpdateService = tvShowUpdateService;
+            _workloadHandler = workloadHandler;
+            _policyFactory = policyFactory;
+            _logger = logger;
         }
 
-        public async Task<bool> StartUpdateProcessAsync(CancellationToken cancellationToken)
+        public async Task StartUpdateProcessAsync(CancellationToken cancellationToken)
         {
-            var uncompletedSagas =  await _integrationDal.GetSagaInProgressAsync(cancellationToken);
+            var uncompletedTask =  await _integrationDal.GetTaskInProgressAsync(cancellationToken);
 
-            if (uncompletedSagas != null)
+            if (uncompletedTask != null)
             {
-                return false;
+                return;
             }
 
             var tvShowsToUpdateIds = await _tvShowUpdateService.GetOutdatedTvShowInfosIdsAsync(cancellationToken);
 
-            if (tvShowsToUpdateIds == null || !tvShowsToUpdateIds.Any())
-            {
-                return false;
-            }
-
-            var newIntegrationSaga = _integrationSagaFactory.CreateIntegrationSaga(tvShowsToUpdateIds, _dateTimeService.UtcNow);
-
-            await _integrationDal.SaveSagaAsync(newIntegrationSaga, cancellationToken);
-
-            return true;
-        }
-
-        public async Task UpdateInfoAboutTvShowAsync(CancellationToken cancellationToken)
-        {
-            var saga = await _integrationDal.GetSagaInProgressAsync(cancellationToken);
-
-            if (saga == null)
+            if (tvShowsToUpdateIds.IsNullOrEmpty())
             {
                 return;
             }
 
-            var sagaItem = await _integrationDal.GetRandomSagaItemAsync(saga.Id, cancellationToken) ?? await _integrationDal.GetSingleSagaItemBySagaIdAsync(saga.Id, cancellationToken);
+            var integrationTask = _integrationTaskFactory.CreateIntegrationTask(tvShowsToUpdateIds, _dateTimeService.UtcNow);
 
-            if (sagaItem == null) // all items processed
+            await _integrationDal.SaveIntegrationTaskAsync(integrationTask, cancellationToken);
+            
+            var policies = _policyFactory.CreateUpdateTaskPolicies(() => _workloadHandler.IncreaseDelayTime());
+
+            try
             {
-                await _integrationDal.SetSagaStateAsync(saga.Id, SagaStates.Completed, cancellationToken);
 
-                return;
+                foreach (var tvShowToUpdateId in tvShowsToUpdateIds)
+                {
+                    await Task.Delay(_workloadHandler.UpdateTvShowInfoTaskExecutionDelay, cancellationToken);
+
+                    await policies.ExecuteAsync(async () =>
+                        await _tvShowUpdateService.CreateOrUpdateTvShowAsync(tvShowToUpdateId, cancellationToken));
+                }
             }
 
-            await _tvShowUpdateService.CreateOrUpdateTvShowAsync(sagaItem, cancellationToken);
+            catch (Exception ex)
+            {
+                _logger.LogError("Update task failed", ex);
 
-            await _integrationDal.DeleteSagaItemByIdAsync(sagaItem.Id, cancellationToken);
+                await _integrationDal.SetIntegrationTaskStateAsync(integrationTask.Id, IntegrationTaskStates.Failed, cancellationToken);
+            }
+
+            await _integrationDal.SetIntegrationTaskStateAsync(integrationTask.Id, IntegrationTaskStates.Completed, cancellationToken);
         }
     }
 }

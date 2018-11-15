@@ -2,6 +2,7 @@
 using ComponentRegistrar;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using IntegrationBl.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Scheduler.Clients;
 using Scheduler.Configurations;
 using Scheduler.Jobs;
-using Scheduler.Services;
 using Serilog;
 
 namespace Scheduler

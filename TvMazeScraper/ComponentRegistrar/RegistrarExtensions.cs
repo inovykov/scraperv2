@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using System.Security.Authentication;
 using AutoMapper;
 using IntegrationBl.Configurations;
+using IntegrationBl.Factories;
 using IntegrationBl.Services;
 using Microsoft.Extensions.Configuration;
 using MongoDal.Configurations;
@@ -22,9 +23,10 @@ namespace ComponentRegistrar
         {
             services.AddSingleton<IDateTimeService, DateTimeService>();
             services.AddSingleton<IJsonConverterWrapper, JsonConverterWrapper>();
-            services.AddSingleton<IIntegrationSagaFactory, IntegrationSagaFactory>();
+            services.AddSingleton<IIntegrationTaskFactory, IntegrationTaskFactory>();
             services.AddSingleton<IUrlFormatService, UrlFormatService>();
-            services.AddSingleton<IRandomNumberService, RandomNumberService>();
+            services.AddSingleton<IWorkloadService, WorkloadService>();
+            services.AddSingleton<IPolicyFactory, PolicyFactory>();
         }
 
         public static void RegisterServicesWithDal(this IServiceCollection services, IConfiguration configuration)

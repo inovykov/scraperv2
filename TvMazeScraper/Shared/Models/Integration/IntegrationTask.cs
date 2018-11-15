@@ -2,11 +2,11 @@
 
 namespace Shared.Models.Integration
 {
-    public class IntegrationSaga
+    public class IntegrationTask
     {
         public Guid Id { get; set; }
 
-        public SagaStates State { get; set; }
+        public IntegrationTaskStates State { get; set; }
 
         public DateTime StartDate { get; set; }
     }

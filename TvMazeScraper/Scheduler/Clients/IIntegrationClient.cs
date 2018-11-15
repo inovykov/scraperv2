@@ -6,7 +6,5 @@ namespace Scheduler.Clients
     public interface IIntegrationClient
     {
         Task StartUpdateProcessAsync(CancellationToken cancellationToken);
-
-        Task UpdateInfoAboutTvShowAsync(CancellationToken cancellationToken);
     }
 }

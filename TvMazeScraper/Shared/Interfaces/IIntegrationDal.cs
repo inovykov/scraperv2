@@ -7,18 +7,12 @@ namespace Shared.Interfaces
 {
     public interface IIntegrationDal
     {
-        Task<IntegrationSaga> GetSagaInProgressAsync(CancellationToken cancellationToken);
+        Task<IntegrationTask> GetTaskInProgressAsync(CancellationToken cancellationToken);
 
-        Task<IntegrationSaga> GetMostRecentCompletedSagaAsync(CancellationToken cancellationToken);
+        Task<IntegrationTask> GetMostRecentCompletedTaskAsync(CancellationToken cancellationToken);
 
-        Task SaveSagaAsync(IntegrationSagaExtended integrationSaga, CancellationToken cancellationToken);
+        Task SaveIntegrationTaskAsync(IntegrationTask integrationTask, CancellationToken cancellationToken);
 
-        Task SetSagaStateAsync(Guid id, SagaStates state, CancellationToken cancellationToken);
-
-        Task<IntegrationItem> GetSingleSagaItemBySagaIdAsync(Guid sagaId, CancellationToken cancellationToken);
-
-        Task<IntegrationItem> GetRandomSagaItemAsync(Guid sagaId, CancellationToken cancellationToken);
-        
-        Task DeleteSagaItemByIdAsync(int id, CancellationToken cancellationToken);
+        Task SetIntegrationTaskStateAsync(Guid id, IntegrationTaskStates state, CancellationToken cancellationToken);
     }
 }

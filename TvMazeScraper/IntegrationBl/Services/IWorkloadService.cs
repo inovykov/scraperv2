@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Scheduler.Services
+namespace IntegrationBl.Services
 {
     public interface IWorkloadService
     {
-        TimeSpan IndividualSagaItemTaskExecutionDelay { get; }
+        TimeSpan UpdateTvShowInfoTaskExecutionDelay { get; }
 
         void IncreaseDelayTime();
     }

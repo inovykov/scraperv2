@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +6,6 @@ using AutoMapper;
 using IntegrationBl.Clients;
 using Shared.Exceptions;
 using Shared.Interfaces;
-using Shared.Models.Integration;
 using Shared.Models.Presentation;
 using Shared.Services;
 
@@ -34,18 +32,13 @@ namespace IntegrationBl.Services
             _dateTimeService = dateTimeService;
         }
         
-        public async Task CreateOrUpdateTvShowAsync(IntegrationItem sagaItem, CancellationToken cancellationToken)
+        public async Task CreateOrUpdateTvShowAsync(int tvShowId, CancellationToken cancellationToken)
         {
-            if (sagaItem == null)
-            {
-                throw new ArgumentNullException(nameof(sagaItem));
-            }
-
-            var tvShowExternalModel = await _tvMazeClient.GetTvShowInfoAsync(sagaItem.Id, cancellationToken);
+            var tvShowExternalModel = await _tvMazeClient.GetTvShowInfoAsync(tvShowId, cancellationToken);
 
             if (tvShowExternalModel == null)
             {
-                throw new EntityNotFoundException($"Tv show with id: {sagaItem.Id} was not found at TvMaze api side.");
+                throw new EntityNotFoundException($"Tv show with id: {tvShowId} was not found at TvMaze api side.");
             }
 
             var tvShow = _mapper.Map<TvShow>(tvShowExternalModel);
@@ -57,18 +50,18 @@ namespace IntegrationBl.Services
         {
             var updateResultTask =  _tvMazeClient.GetUpdatesAsync(cancellationToken);
 
-            var recentSaga = await _integrationDal.GetMostRecentCompletedSagaAsync(cancellationToken);
+            var recentIntegrationTask = await _integrationDal.GetMostRecentCompletedTaskAsync(cancellationToken);
 
             var updateResult = await updateResultTask;
 
-            if (recentSaga == null)
+            if (recentIntegrationTask == null)
             {
                 return updateResult.Keys.ToList();
             }
 
-            var sagaStartTimestamp = _dateTimeService.ConvertToUnixTimestamp(recentSaga.StartDate);
+            var integrationTaskStartTimestamp = _dateTimeService.ConvertToUnixTimestamp(recentIntegrationTask.StartDate);
 
-            var keysToUpdate = updateResult.Where(ur => ur.Value > sagaStartTimestamp).Select(ur => ur.Key);
+            var keysToUpdate = updateResult.Where(ur => ur.Value > integrationTaskStartTimestamp).Select(ur => ur.Key);
 
             return keysToUpdate.ToList();
         }
